@@ -7,6 +7,7 @@ import time
 import xbmc
 import xbmcgui
 import xbmcplugin
+import unicodedata
 from urllib.parse import unquote_plus
 
 
@@ -49,6 +50,9 @@ class Plugin(object):
         for x in range(20):
             it = {k: v.format(x=x) if isinstance(v, str) else v for k, v in TEST_ITEM.items()}
             li = xbmcgui.ListItem(label=it['label'], label2=it['label2'], path=it['path'])
+            li.addContextMenuItems([
+                ('ContextTest01', 'Notification(ContextTest01,ContextTest01)'),
+                ('ContextTest02', 'Notification(ContextTest02,ContextTest02)')])
             xbmcplugin.addDirectoryItem(
                 handle=self.handle,
                 url=it['path'],
@@ -61,7 +65,17 @@ class Plugin(object):
             xbmcplugin.addSortMethod(self.handle, **i)
         xbmcplugin.endOfDirectory(self.handle, updateListing=self.update_listing)
 
+    def test_language(self):
+        data = self.params.get('data')
+        normalize_data = unicodedata.normalize('NFKD', data)
+        uc_name = [unicodedata.name(c) for c in data]
+        uc_raw = data.encode("raw_unicode_escape")
+        uc_norm = [unicodedata.name(c) for c in normalize_data]
+        uc_norm_raw = normalize_data.encode("raw_unicode_escape")
+        xbmcgui.Dialog().ok('Data', f'Received {uc_name}\n{uc_raw}\nNormalized {uc_norm}\n{uc_norm_raw}')
+
     def run(self):
-        info = self.params.get('info')
         self.make_listing()
-        xbmcgui.Dialog().ok('Info Param', f'Received {info}\n{info.encode("raw_unicode_escape")}')
+        info = self.params.get('info')
+        if info == 'test_language':
+            return self.test_language()
